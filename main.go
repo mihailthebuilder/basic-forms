@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"log"
 	"os"
 
@@ -31,12 +32,15 @@ func loadEnvironmentVariablesFromDotEnvFile() {
 }
 
 func runApplication() {
+	reset := flag.Bool("reset", false, "resets the database")
+	flag.Parse()
+
 	r := gin.Default()
 
 	serverRecoversFromAnyPanicAndWrites500(r)
 	allowAllOriginsForCORS(r)
 
-	initDb()
+	initDb(reset)
 	defer db.Close()
 
 	setUpRoutes(r)
@@ -54,7 +58,11 @@ func allowAllOriginsForCORS(engine *gin.Engine) {
 
 var db *sql.DB
 
-func initDb() {
+func initDb(reset *bool) {
+	if *reset {
+		os.Remove("./sqlite.db")
+	}
+
 	var err error
 	db, err = sql.Open("sqlite", "./sqlite.db")
 	if err != nil {
@@ -63,10 +71,12 @@ func initDb() {
 
 	sql := `
 		create table if not exists submission (
-			user_id text primary key, 
+			user_id text not null, 
 			content text not null, 
 			origin_url text not null
 		);
+
+		create index idx_submission_user_id on submission(user_id);
 	`
 
 	_, err = db.Exec(sql)

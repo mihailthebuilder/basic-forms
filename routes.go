@@ -1,14 +1,15 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func setUpRoutes(r *gin.Engine) {
-	r.GET("/user/:id/submissions", getSubmissions)
-	r.POST("/user/:id/submit", postSubmission)
+	r.GET("/users/:userId/submissions", getSubmissions)
+	r.POST("/users/:userId/submit", postSubmission)
 }
 
 func getSubmissions(c *gin.Context) {
@@ -16,5 +17,10 @@ func getSubmissions(c *gin.Context) {
 }
 
 func postSubmission(c *gin.Context) {
+	userId := c.Param("userId")
+	host := c.Request.Header.Get("Origin")
+
+	log.Println("request", userId, host)
+
 	c.String(http.StatusOK, "Return")
 }
