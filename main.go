@@ -36,7 +36,7 @@ func runApplication() {
 
 	setUpRoutes(r)
 
-	r.Run()
+	r.Run("localhost:8080")
 }
 
 func serverRecoversFromAnyPanicAndWrites500(engine *gin.Engine) {
