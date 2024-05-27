@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +19,12 @@ func postSubmission(c *gin.Context) {
 	userId := c.Param("userId")
 	host := c.Request.Header.Get("Origin")
 
-	log.Println("request", userId, host)
+	sql := `
+		insert into submission (user_id, content, origin_url)
+		values (%s, %s, %s)
+	`
 
-	c.String(http.StatusOK, "Return")
+	db.Exec(sql, userId, "testing content", host)
+
+	c.Status(http.StatusAccepted)
 }
