@@ -1,7 +1,15 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-func setUpRoutes(engine *gin.Engine) {
-	engine.Use(gin.Recovery())
+	"github.com/gin-gonic/gin"
+)
+
+func setUpRoutes(r *gin.Engine) {
+	r.GET("/user/:id/submissions", getSubmissions)
+}
+
+func getSubmissions(c *gin.Context) {
+	c.String(http.StatusOK, "Return")
 }
