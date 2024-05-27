@@ -76,7 +76,7 @@ func initDb(reset *bool) {
 			origin_url text not null
 		);
 
-		create index if not exists idx_submission_user_id on submission(user_id);
+		create index if not exists idx_submission_user_id on submission(user_id, origin_url);
 	`
 
 	_, err = db.Exec(sql)

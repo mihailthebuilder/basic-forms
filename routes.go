@@ -13,8 +13,8 @@ func setUpRoutes(r *gin.Engine) {
 }
 
 type Submission struct {
-	content   string
-	originUrl string
+	Content   string `json:"content"`
+	OriginUrl string `json:"originUrl"`
 }
 
 func getSubmissions(c *gin.Context) {
@@ -38,7 +38,7 @@ func getSubmissions(c *gin.Context) {
 
 	for rows.Next() {
 		var submission Submission
-		err := rows.Scan(&submission.content, &submission.originUrl)
+		err := rows.Scan(&submission.Content, &submission.OriginUrl)
 		if err != nil {
 			log.Println("error scanning submission: ", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
@@ -51,16 +51,29 @@ func getSubmissions(c *gin.Context) {
 	c.JSON(http.StatusOK, submissions)
 }
 
+type SubmissionPostRequestBody struct {
+	Content string `json:"content"`
+}
+
 func postSubmission(c *gin.Context) {
 	userId := c.Param("userId")
 	host := c.Request.Header.Get("Origin")
+
+	var body SubmissionPostRequestBody
+
+	err := c.ShouldBindBodyWithJSON(&body)
+	if err != nil {
+		log.Println("error parsing body: ", err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	sql := `
 		insert into submission (user_id, content, origin_url)
 		values (?, ?, ?)
 	`
 
-	result, err := db.Exec(sql, userId, "testing content", host)
+	result, err := db.Exec(sql, userId, body.Content, host)
 
 	if err != nil {
 		log.Println("error registering submission: ", err)
