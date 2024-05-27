@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,43 @@ func setUpRoutes(r *gin.Engine) {
 	r.POST("/users/:userId/submit", postSubmission)
 }
 
+type Submission struct {
+	content   string
+	originUrl string
+}
+
 func getSubmissions(c *gin.Context) {
-	c.String(http.StatusOK, "Return")
+	userId := c.Param("userId")
+
+	sql := `
+		select content, origin_url
+		from submission
+		where user_id = ?
+	`
+
+	rows, err := db.QueryContext(c, sql, userId)
+	if err != nil {
+		log.Println("error fetching submissions: ", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var submissions []Submission
+
+	for rows.Next() {
+		var submission Submission
+		err := rows.Scan(&submission.content, &submission.originUrl)
+		if err != nil {
+			log.Println("error scanning submission: ", err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		submissions = append(submissions, submission)
+	}
+
+	c.JSON(http.StatusOK, submissions)
 }
 
 func postSubmission(c *gin.Context) {
@@ -21,10 +57,29 @@ func postSubmission(c *gin.Context) {
 
 	sql := `
 		insert into submission (user_id, content, origin_url)
-		values (%s, %s, %s)
+		values (?, ?, ?)
 	`
 
-	db.Exec(sql, userId, "testing content", host)
+	result, err := db.Exec(sql, userId, "testing content", host)
+
+	if err != nil {
+		log.Println("error registering submission: ", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		log.Println("error fetching rows affected: ", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if rows != 1 {
+		log.Println("rows affected error; expected 1, got: ", rows)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
 	c.Status(http.StatusAccepted)
 }
