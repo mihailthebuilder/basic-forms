@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"basic-forms/logger"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -43,9 +45,11 @@ func runApplication() {
 	initDb(reset)
 	defer db.Close()
 
+	r.Use(logger.SetLoggerContext)
+
 	setUpRoutes(r)
 
-	r.Run("localhost:8080")
+	r.Run("0.0.0.0:8080")
 }
 
 func serverRecoversFromAnyPanicAndWrites500(engine *gin.Engine) {
