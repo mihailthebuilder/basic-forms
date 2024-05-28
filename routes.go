@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"basic-forms/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +28,7 @@ func getSubmissions(c *gin.Context) {
 
 	rows, err := db.QueryContext(c, sql, userId)
 	if err != nil {
-		log.Println("error fetching submissions: ", err)
+		logger.Error("error fetching submissions: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -40,7 +40,7 @@ func getSubmissions(c *gin.Context) {
 		var submission Submission
 		err := rows.Scan(&submission.Content, &submission.OriginUrl)
 		if err != nil {
-			log.Println("error scanning submission: ", err)
+			logger.Error("error scanning submission: ", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -63,7 +63,7 @@ func postSubmission(c *gin.Context) {
 
 	err := c.ShouldBindBodyWithJSON(&body)
 	if err != nil {
-		log.Println("error parsing body: ", err)
+		logger.Error("error parsing body: ", err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -76,20 +76,20 @@ func postSubmission(c *gin.Context) {
 	result, err := db.Exec(sql, userId, body.Content, host)
 
 	if err != nil {
-		log.Println("error registering submission: ", err)
+		logger.Error("error registering submission: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		log.Println("error fetching rows affected: ", err)
+		logger.Error("error fetching rows affected: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	if rows != 1 {
-		log.Println("rows affected error; expected 1, got: ", rows)
+		logger.Error("rows affected error; expected 1, got: ", rows)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
