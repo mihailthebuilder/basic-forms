@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -38,15 +37,12 @@ func loadEnvironmentVariablesFromDotEnvFile() {
 }
 
 func runApplication(host string) {
-	reset := flag.Bool("reset", false, "resets the database")
-	flag.Parse()
-
 	r := gin.Default()
 
 	serverRecoversFromAnyPanicAndWrites500(r)
 	allowAllOriginsForCORS(r)
 
-	initDb(reset)
+	initDb(shouldResetDatabase())
 	defer db.Close()
 
 	r.Use(logger.SetLoggerContext)
@@ -54,6 +50,10 @@ func runApplication(host string) {
 	setUpRoutes(r)
 
 	r.Run(fmt.Sprintf("%s:8080", host))
+}
+
+func shouldResetDatabase() bool {
+	return os.Getenv("RESET") == "true"
 }
 
 func serverRecoversFromAnyPanicAndWrites500(engine *gin.Engine) {
@@ -66,8 +66,8 @@ func allowAllOriginsForCORS(engine *gin.Engine) {
 
 var db *sql.DB
 
-func initDb(reset *bool) {
-	if *reset {
+func initDb(reset bool) {
+	if reset {
 		os.Remove("./sqlite.db")
 	}
 
@@ -81,10 +81,10 @@ func initDb(reset *bool) {
 		create table if not exists submission (
 			user_id text not null, 
 			content text not null, 
-			origin_url text not null
+			origin text not null
 		);
 
-		create index if not exists idx_submission_user_id on submission(user_id, origin_url);
+		create index if not exists idx_submission_user_id on submission(user_id, origin);
 	`
 
 	_, err = db.Exec(sql)
