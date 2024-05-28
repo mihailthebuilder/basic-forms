@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -15,11 +16,14 @@ import (
 )
 
 func main() {
+	host := "0.0.0.0"
+
 	if isRunningLocally() {
 		loadEnvironmentVariablesFromDotEnvFile()
+		host = "localhost"
 	}
 
-	runApplication()
+	runApplication(host)
 }
 
 func isRunningLocally() bool {
@@ -33,7 +37,7 @@ func loadEnvironmentVariablesFromDotEnvFile() {
 	}
 }
 
-func runApplication() {
+func runApplication(host string) {
 	reset := flag.Bool("reset", false, "resets the database")
 	flag.Parse()
 
@@ -49,7 +53,7 @@ func runApplication() {
 
 	setUpRoutes(r)
 
-	r.Run("0.0.0.0:8080")
+	r.Run(fmt.Sprintf("%s:8080", host))
 }
 
 func serverRecoversFromAnyPanicAndWrites500(engine *gin.Engine) {
