@@ -13,15 +13,15 @@ func setUpRoutes(r *gin.Engine) {
 }
 
 type Submission struct {
-	Content   string `json:"content"`
-	OriginUrl string `json:"originUrl"`
+	Content string `json:"content"`
+	Origin  string `json:"origin"`
 }
 
 func getSubmissions(c *gin.Context) {
 	userId := c.Param("userId")
 
 	sql := `
-		select content, origin_url
+		select content, origin
 		from submission
 		where user_id = ?
 	`
@@ -38,7 +38,7 @@ func getSubmissions(c *gin.Context) {
 
 	for rows.Next() {
 		var submission Submission
-		err := rows.Scan(&submission.Content, &submission.OriginUrl)
+		err := rows.Scan(&submission.Content, &submission.Origin)
 		if err != nil {
 			logger.Error("error scanning submission: ", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
@@ -69,7 +69,7 @@ func postSubmission(c *gin.Context) {
 	}
 
 	sql := `
-		insert into submission (user_id, content, origin_url)
+		insert into submission (user_id, content, origin)
 		values (?, ?, ?)
 	`
 
