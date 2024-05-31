@@ -9,8 +9,8 @@ import (
 
 func setUpRoutes(r *gin.Engine) {
 	r.POST("/users", createUser)
-	r.POST("/users/:userId/submit", postSubmission)
-	r.GET("/users/:userId/origins/:origin", getSubmissionsForOrigin)
+	r.POST("/submit/:externalUserId", postSubmission)
+	r.GET("/users/:internalUserId/origins/:origin", getSubmissionsForOrigin)
 }
 
 func createUser(c *gin.Context) {
@@ -26,7 +26,7 @@ func createUser(c *gin.Context) {
 }
 
 func postSubmission(c *gin.Context) {
-	userId := c.Param("userId")
+	externalUserId := c.Param("externalUserId")
 	origin := c.Request.Header.Get("Origin")
 
 	body, err := c.GetRawData()
@@ -36,7 +36,7 @@ func postSubmission(c *gin.Context) {
 		return
 	}
 
-	err = datastore.AddSubmission(userId, origin, body)
+	err = datastore.AddSubmission(externalUserId, origin, body)
 	if err != nil {
 		logger.Error("can't add submission: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -47,10 +47,10 @@ func postSubmission(c *gin.Context) {
 }
 
 func getSubmissionsForOrigin(c *gin.Context) {
-	userId := c.Param("userId")
+	internalUserId := c.Param("internalUserId")
 	origin := c.Param("origin")
 
-	content, err := datastore.GetSubmissions(userId, origin)
+	content, err := datastore.GetSubmissions(internalUserId, origin)
 	if err != nil {
 		logger.Error("can't fetch file contents: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
