@@ -46,7 +46,7 @@ func (e Encryption) Encrypt(input string) (string, error) {
 
 func (e Encryption) Decrypt(input string) (string, error) {
 	// Convert the secret to a byte array
-	hashedKey := sha256.Sum256([]byte(input))
+	hashedKey := sha256.Sum256([]byte(e.Secret))
 	key := hashedKey[:]
 
 	// Create a new AES cipher using the secret key
