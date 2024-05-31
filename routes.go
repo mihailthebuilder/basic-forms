@@ -3,6 +3,7 @@ package main
 import (
 	"basic-forms/logger"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -46,7 +47,7 @@ func createUser(c *gin.Context) {
 
 func postSubmission(c *gin.Context) {
 	externalUserId := c.Param("externalUserId")
-	origin := c.Request.Header.Get("Origin")
+	origin := removeProtocol(c.Request.Header.Get("Origin"))
 
 	body, err := c.GetRawData()
 	if err != nil {
@@ -84,4 +85,14 @@ func getSubmissionsForOrigin(c *gin.Context) {
 	}
 
 	c.Data(http.StatusOK, "text/plain", content)
+}
+
+func removeProtocol(origin string) string {
+	if strings.HasPrefix(origin, "http://") {
+		return strings.TrimPrefix(origin, "http://")
+	}
+	if strings.HasPrefix(origin, "https://") {
+		return strings.TrimPrefix(origin, "https://")
+	}
+	return origin
 }
