@@ -18,6 +18,8 @@ func createUser(c *gin.Context) {
 
 	if err != nil {
 		logger.Error("can't create new user: ", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
 
 	c.JSON(http.StatusCreated, user)
