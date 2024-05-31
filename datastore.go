@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 )
@@ -20,12 +22,19 @@ type User struct {
 	ExternalId string `json:"externalId"`
 }
 
-func (d Datastore) newUser() (User, error) {
+func (d Datastore) NewUser() (User, error) {
 	user := User{}
 
 	internalId := uuid.New()
 
 	user.InternalId = internalId.String()
+
+	// Create the directory if it doesn't exist
+	dirPath := filepath.Join(".", "users", user.InternalId)
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return user, fmt.Errorf("can't create user directory: %s", err)
+	}
 
 	externalId, err := encrypt(internalId, d.Secret)
 	if err != nil {
@@ -34,6 +43,23 @@ func (d Datastore) newUser() (User, error) {
 
 	user.ExternalId = externalId
 	return user, nil
+}
+
+func (d Datastore) AddSubmission(userId string, origin string, content []byte) error {
+	filePath := filepath.Join(".", "users", userId, origin)
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("can't open file: %s", err)
+	}
+	defer file.Close()
+
+	_, err = file.Write(content)
+	if err != nil {
+		return fmt.Errorf("can't write to file: %s", err)
+	}
+
+	return nil
 }
 
 func encrypt(internalId uuid.UUID, secret string) (string, error) {
