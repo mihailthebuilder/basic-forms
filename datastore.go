@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -76,7 +77,8 @@ func (d Datastore) GetSubmissions(userId string, origin string) ([]byte, error) 
 
 func encrypt(internalId uuid.UUID, secret string) (string, error) {
 	// Convert the secret to a byte array
-	key := []byte(secret)
+	hashedKey := sha256.Sum256([]byte(secret))
+	key := hashedKey[:]
 
 	// Create a new AES cipher using the secret key
 	block, err := aes.NewCipher(key)
