@@ -79,5 +79,9 @@ func initEncryption() {
 		log.Fatal("error loading secret env var")
 	}
 
-	encryption = Encryption{Secret: secret}
+	var err error
+	encryption, err = newEncryption(secret)
+	if err != nil {
+		log.Fatal("error creating encryption: ", err)
+	}
 }
