@@ -5,7 +5,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
+
+type User struct {
+	InternalId string `json:"internalId"`
+	ExternalId string `json:"externalId"`
+}
 
 func setUpRoutes(r *gin.Engine) {
 	r.POST("/users", createUser)
@@ -14,15 +20,28 @@ func setUpRoutes(r *gin.Engine) {
 }
 
 func createUser(c *gin.Context) {
-	user, err := datastore.NewUser()
+	internalUserId := uuid.New()
 
+	externalId, err := encryption.Encrypt(internalUserId.String())
+	if err != nil {
+		logger.Error("can't encrypt internal ID: ", internalUserId, " error: ", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = datastore.NewUser(internalUserId.String())
 	if err != nil {
 		logger.Error("can't create new user: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	type User struct {
+		InternalId string `json:"internalId"`
+		ExternalId string `json:"externalId"`
+	}
+
+	c.JSON(http.StatusCreated, User{InternalId: internalUserId.String(), ExternalId: externalId})
 }
 
 func postSubmission(c *gin.Context) {
@@ -36,7 +55,14 @@ func postSubmission(c *gin.Context) {
 		return
 	}
 
-	err = datastore.AddSubmission(externalUserId, origin, body)
+	internalUserId, err := encryption.Decrypt(externalUserId)
+	if err != nil {
+		logger.Error("can't decrypt externalUserId: ", err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	err = datastore.AddSubmission(internalUserId, origin, body)
 	if err != nil {
 		logger.Error("can't add submission: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
