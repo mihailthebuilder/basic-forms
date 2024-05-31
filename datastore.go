@@ -47,7 +47,13 @@ func (d Datastore) NewUser() (User, error) {
 }
 
 func (d Datastore) AddSubmission(userId string, origin string, content []byte) error {
-	filePath := filepath.Join(".", "users", userId, fmt.Sprintf("%s.txt", origin))
+	internalUserId, err := decrypt(userId, d.Secret)
+
+	if err != nil {
+		return fmt.Errorf("unable to decrypt userId: %s", err)
+	}
+
+	filePath := filepath.Join(".", "users", internalUserId.String(), fmt.Sprintf("%s.txt", origin))
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -64,6 +70,7 @@ func (d Datastore) AddSubmission(userId string, origin string, content []byte) e
 }
 
 func (d Datastore) GetSubmissions(userId string, origin string) ([]byte, error) {
+
 	filePath := filepath.Join(".", "users", userId, fmt.Sprintf("%s.txt", origin))
 
 	// check if file exists
@@ -103,4 +110,52 @@ func encrypt(internalId uuid.UUID, secret string) (string, error) {
 
 	// Return the encrypted data as a hex string
 	return hex.EncodeToString(ciphertext), nil
+}
+
+func decrypt(encryptedData string, secret string) (uuid.UUID, error) {
+	// Convert the secret to a byte array
+	hashedKey := sha256.Sum256([]byte(secret))
+	key := hashedKey[:]
+
+	// Create a new AES cipher using the secret key
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	// Create a new GCM (Galois/Counter Mode) cipher mode instance
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create GCM: %w", err)
+	}
+
+	// Decode the hex string back to bytes
+	data, err := hex.DecodeString(encryptedData)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to decode hex string: %w", err)
+	}
+
+	// Extract the nonce size from GCM
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return uuid.Nil, fmt.Errorf("ciphertext too short")
+	}
+
+	// Extract the nonce and ciphertext
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+
+	// Decrypt the data using GCM with the nonce
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to decrypt: %w", err)
+	}
+
+	// Convert the decrypted plaintext back to UUID
+	decryptedUUID, err := uuid.FromBytes(plaintext)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to convert decrypted data to UUID: %w", err)
+	}
+
+	// Return the decrypted UUID
+	return decryptedUUID, nil
 }
