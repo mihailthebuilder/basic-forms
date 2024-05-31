@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -42,8 +41,7 @@ func runApplication(host string) {
 	serverRecoversFromAnyPanicAndWrites500(r)
 	allowAllOriginsForCORS(r)
 
-	initDb(shouldResetDatabase())
-	defer db.Close()
+	initDatastore(shouldResetDatabase())
 
 	r.Use(logger.SetLoggerContext)
 
@@ -64,31 +62,17 @@ func allowAllOriginsForCORS(engine *gin.Engine) {
 	engine.Use(cors.Default())
 }
 
-var db *sql.DB
+var datastore Datastore
 
-func initDb(reset bool) {
+func initDatastore(reset bool) {
 	if reset {
-		os.Remove("./sqlite.db")
+		os.RemoveAll("./users/")
 	}
 
-	var err error
-	db, err = sql.Open("sqlite", "./sqlite.db")
-	if err != nil {
-		log.Fatalf("error starting database: %s", err)
+	secret := os.Getenv("SECRET")
+	if len(secret) == 0 {
+		log.Fatal("error loading secret env var")
 	}
 
-	sql := `
-		create table if not exists submission (
-			user_id text not null, 
-			content text not null, 
-			origin text not null
-		);
-
-		create index if not exists idx_submission_user_id on submission(user_id, origin);
-	`
-
-	_, err = db.Exec(sql)
-	if err != nil {
-		log.Fatalf("error initializing table: %s", err)
-	}
+	datastore = Datastore{Secret: secret}
 }
