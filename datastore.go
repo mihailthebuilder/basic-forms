@@ -6,9 +6,7 @@ import (
 	"path/filepath"
 )
 
-type Datastore struct {
-	Secret string
-}
+type Datastore struct{}
 
 func (d Datastore) NewUser(userId string) error {
 	dirPath := filepath.Join(".", "users", userId)
