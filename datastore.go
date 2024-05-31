@@ -46,7 +46,7 @@ func (d Datastore) NewUser() (User, error) {
 }
 
 func (d Datastore) AddSubmission(userId string, origin string, content []byte) error {
-	filePath := filepath.Join(".", "users", userId, origin)
+	filePath := filepath.Join(".", "users", userId, fmt.Sprintf("%s.txt", origin))
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -60,6 +60,18 @@ func (d Datastore) AddSubmission(userId string, origin string, content []byte) e
 	}
 
 	return nil
+}
+
+func (d Datastore) GetSubmissions(userId string, origin string) ([]byte, error) {
+	filePath := filepath.Join(".", "users", userId, fmt.Sprintf("%s.txt", origin))
+
+	// check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	content, err := os.ReadFile(filePath)
+	return content, err
 }
 
 func encrypt(internalId uuid.UUID, secret string) (string, error) {
