@@ -66,6 +66,12 @@ func (d Datastore) AddSubmission(userId string, origin string, content []byte) e
 		return fmt.Errorf("can't write to file: %s", err)
 	}
 
+	// Write a newline character
+	_, err = file.Write([]byte("\n"))
+	if err != nil {
+		return fmt.Errorf("can't write new line to file: %s", err)
+	}
+
 	return nil
 }
 
