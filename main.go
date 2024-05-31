@@ -42,6 +42,7 @@ func runApplication(host string) {
 	allowAllOriginsForCORS(r)
 
 	initDatastore(shouldResetDatabase())
+	initEncryption()
 
 	r.Use(logger.SetLoggerContext)
 
@@ -63,16 +64,20 @@ func allowAllOriginsForCORS(engine *gin.Engine) {
 }
 
 var datastore Datastore
+var encryption Encryption
 
 func initDatastore(reset bool) {
 	if reset {
 		os.RemoveAll("./users/")
 	}
+	datastore = Datastore{}
+}
 
+func initEncryption() {
 	secret := os.Getenv("SECRET")
 	if len(secret) == 0 {
 		log.Fatal("error loading secret env var")
 	}
 
-	datastore = Datastore{Secret: secret}
+	encryption = Encryption{Secret: secret}
 }
